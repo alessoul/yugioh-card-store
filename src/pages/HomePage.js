@@ -20,6 +20,7 @@ const HomePage = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [cardsPerPage, setCardsPerPage] = useState(15);
   const [selectedTypes, setSelectedTypes] = useState([]);
+  const [selectedRaces, setSelectedRaces] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -32,9 +33,11 @@ const HomePage = () => {
         let params = new URLSearchParams();
         params.append('num', cardsPerPage);
         params.append('offset', currentPage * cardsPerPage);
+
         if (language === 'pt') {
           params.append('language', 'pt');
         }
+
         if (searchTerm) {
           params.append('fname', searchTerm);
         } else {
@@ -44,18 +47,21 @@ const HomePage = () => {
           if (selectedTypes.length > 0) {
             params.append('type', selectedTypes.join(','));
           }
+          if (selectedRaces.length > 0) {
+            params.append('race', selectedRaces.join(','));
+          }
         }
+        
         const response = await api.get(`cardinfo.php?${params.toString()}`);
         setCards(response.data.data);
       } catch (error) {
-        console.error("Erro ao buscar as cartas:", error);
         setCards([]);
       } finally {
         setLoading(false);
       }
     };
     fetchCards();
-  }, [currentPage, cardsPerPage, selectedAttributes, selectedTypes, searchTrigger, searchTerm, language]);
+  }, [currentPage, cardsPerPage, selectedAttributes, selectedTypes, selectedRaces, searchTrigger, searchTerm, language]);
 
   const handleTypeToggle = (type) => {
     setSelectedTypes(prev => {
@@ -68,9 +74,21 @@ const HomePage = () => {
     setCurrentPage(0);
   };
 
+  const handleRaceToggle = (race) => {
+    setSelectedRaces(prev => {
+      if (prev.includes(race)) {
+        return prev.filter(item => item !== race);
+      } else {
+        return [...prev, race];
+      }
+    });
+    setCurrentPage(0);
+  };
+
   const handleClearFilters = () => {
     clearAllFilters();
     setSelectedTypes([]);
+    setSelectedRaces([]);
     setCurrentPage(0);
   };
   
@@ -101,6 +119,8 @@ const HomePage = () => {
           <FilterSidebar
             selectedTypes={selectedTypes}
             onTypeChange={handleTypeToggle}
+            selectedRaces={selectedRaces}
+            onRaceChange={handleRaceToggle}
             onClearFilters={handleClearFilters}
             cardsPerPage={cardsPerPage}
             setCardsPerPage={setCardsPerPage}

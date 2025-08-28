@@ -1,4 +1,6 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { LanguageContext } from './LanguageContext';
+import api from '../services/api';
 
 export const CartContext = createContext();
 
@@ -13,6 +15,7 @@ export const CartProvider = ({ children }) => {
     }
   });
 
+  const { language } = useContext(LanguageContext);
   const [modal, setModal] = useState({ isOpen: false, message: '', type: 'success' });
   const [searchTerm, setSearchTerm] = useState('');
   const [searchTrigger, setSearchTrigger] = useState(0);
@@ -22,6 +25,32 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('yugioh_cart', JSON.stringify(cartItems));
   }, [cartItems]);
+
+  useEffect(() => {
+    const updateCartLanguage = async () => {
+      if (cartItems.length === 0) {
+        return;
+      }
+
+      const cardIds = cartItems.map(item => item.id).join(',');
+      
+      try {
+        const response = await api.get(`cardinfo.php?id=${cardIds}&language=${language}`);
+        const translatedCardsData = response.data.data;
+
+        const updatedCartItems = cartItems.map(oldItem => {
+          const translatedItem = translatedCardsData.find(newItem => newItem.id === oldItem.id);
+          return translatedItem ? { ...translatedItem, quantity: oldItem.quantity } : oldItem;
+        });
+
+        setCartItems(updatedCartItems);
+      } catch (error) {
+        console.error("Erro ao atualizar idiomas do carrinho:", error);
+      }
+    };
+
+    updateCartLanguage();
+  }, [language]);
 
   const addToCart = (card, quantityToAdd) => {
     const existingItem = cartItems.find(item => item.id === card.id);
